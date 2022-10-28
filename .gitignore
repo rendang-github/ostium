@@ -1,0 +1,11 @@
+# VIM swap files
+*.swp
+
+.DS_Store
+node_modules
+/frontend/build
+/frontend/.svelte-kit
+/package
+.env
+.env.*
+!.env.example
