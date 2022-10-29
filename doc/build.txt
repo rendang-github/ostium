@@ -22,6 +22,7 @@ nvm install --lts
 node --version
 which node
 
+https://medium.com/codingthesmartway-com-blog/the-svelte-3-quickstart-tutorial-8f05696050b3
 
 ### npm create svelte@latest my-app
 npx degit sveltejs/template frontend

@@ -1,0 +1,7 @@
+Authorization Cookie is a serialized json structure that takes the following form:
+
+BASE64([128 bit checksum of following bytes][json structure])
+
+The JSON structure is not private and could be decoded by the user, so private data should not be stored in there.  The data integrity is protected by the checksum as it is created with a private key.
+
+Checksum is calculated using the blake3 algorithm with a shared key known by the backend servers.  The key can be changed at any time, however this will result in logging out any logged in users.

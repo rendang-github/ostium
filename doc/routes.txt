@@ -1,0 +1,6 @@
+POST /api/v1/login - post username & password, receive authorization cookie or 401 code if the password or username is not known.
+GET /api/v1/test - test login cookie
+
+curl -v -H 'Content-Type: application/json' -d '{"username":"user1","password":"abcd"}' -X POST http://localhost:8081/api/v1/login
+
+curl -v -H 'Content-Type: application/json' -d '{"username":"peter","password":"foo"}' --cookie "auth=Y+s+SbzZrlbGQDSEoODnjUD4t8MMNZjZenQ3fZ4VhaZiYXp1enU=" -X GET http://localhost:8081/api/v1/test
