@@ -23,7 +23,14 @@ node --version
 which node
 
 
-npm create svelte@latest my-app
+### npm create svelte@latest my-app
+npx degit sveltejs/template frontend
 cd frontend
 npm install
+
+git checkin
+
+npm run dev
+npm run build
+
 
