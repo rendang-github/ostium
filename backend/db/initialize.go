@@ -29,5 +29,6 @@ func Initialize() {
     defer ReleaseConnection(conn)
 
     createCollection(conn, "campaign")
+    createCollection(conn, "user")
 }
 

@@ -10,8 +10,8 @@ import (
 )
 
 func APICampaignPost(c echo.Context) (err error) {
-    user := models.UserFromCookie(c)
-    if user == nil || !user.CheckOp(c, auth.RealmCampaign, auth.OpCreate, nil) {
+    login := models.UserFromCookie(c)
+    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpCreate, nil) {
         return c.NoContent(http.StatusUnauthorized)
     }
 
@@ -29,9 +29,9 @@ func APICampaignPost(c echo.Context) (err error) {
     oid := db.Insert("campaign", campaign)
     campaign.Id = &oid
 
-    // Allow the user to own the new campaign id
+    // Allow the current user to own the new campaign id
     hexId := oid.Hex();
-    if ! user.AddPermission(c, auth.RealmCampaign, auth.ClassOwner, &hexId) {
+    if ! login.AddPermission(c, auth.RealmCampaign, auth.ClassOwner, &hexId) {
         return c.NoContent(http.StatusInternalServerError)
     }
 
@@ -46,9 +46,9 @@ func APICampaignPut(c echo.Context) (err error) {
         return c.NoContent(http.StatusBadRequest)
     }
 
-    user := models.UserFromCookie(c)
+    login := models.UserFromCookie(c)
     oidHex := oid.Hex()
-    if user == nil || !user.CheckOp(c, auth.RealmCampaign, auth.OpChange, &oidHex) {
+    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpChange, &oidHex) {
         return c.NoContent(http.StatusUnauthorized)
     }
 
@@ -88,9 +88,9 @@ func APICampaignGet(c echo.Context) (err error) {
     }
 
     // Check auth
-    user := models.UserFromCookie(c)
+    login := models.UserFromCookie(c)
     oidHex := oid.Hex()
-    if user == nil || !user.CheckOp(c, auth.RealmCampaign, auth.OpRetrieve, &oidHex) {
+    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpRetrieve, &oidHex) {
         return c.NoContent(http.StatusUnauthorized)
     }
 
@@ -106,8 +106,8 @@ func APICampaignGet(c echo.Context) (err error) {
 
 func APICampaignAll(c echo.Context) (err error) {
     // Check auth
-    user := models.UserFromCookie(c)
-    if user == nil || !user.CheckOp(c, auth.RealmCampaign, auth.OpRetrieve, nil) {
+    login := models.UserFromCookie(c)
+    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpRetrieve, nil) {
         return c.NoContent(http.StatusUnauthorized)
     }
 
@@ -129,9 +129,9 @@ func APICampaignDelete(c echo.Context) (err error) {
         return c.NoContent(http.StatusBadRequest)
     }
 
-    user := models.UserFromCookie(c)
+    login := models.UserFromCookie(c)
     oidHex := oid.Hex()
-    if user == nil || !user.CheckOp(c, auth.RealmCampaign, auth.OpErase, &oidHex) {
+    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpErase, &oidHex) {
         return c.NoContent(http.StatusUnauthorized)
     }
 

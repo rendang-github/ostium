@@ -1,11 +1,11 @@
 package main
 
 import (
-    "ostium/db"
-    "net/http"
     "github.com/labstack/echo/v4"
     "github.com/labstack/echo/v4/middleware"
+    "net/http"
     "ostium/controllers"
+    "ostium/db"
 )
 
 func main() {
@@ -26,7 +26,14 @@ func main() {
 
     // Login routes
     server.POST("/api/v1/login", controllers.APILoginPost)
-    server.GET("/api/v1/test", controllers.APITestGet)
+    server.GET("/api/v1/login", controllers.APILoginGet)
+
+    // User routes
+    server.POST("/api/v1/user", controllers.APIUserPost)
+    server.PUT("/api/v1/user/:id", controllers.APIUserPut)
+    server.GET("/api/v1/user", controllers.APIUserAll)
+    server.GET("/api/v1/user/:id", controllers.APIUserGet)
+    server.DELETE("/api/v1/user/:id", controllers.APIUserDelete)
 
     // Campaign routes
     server.POST("/api/v1/campaign", controllers.APICampaignPost)

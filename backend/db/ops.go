@@ -30,6 +30,16 @@ func Get(output interface {}, model string, id primitive.ObjectID) (err error) {
     return result.Decode(output)
 }
 
+func Query(output interface {}, model string, filter interface{}) (err error) {
+    // Get a connection
+    conn := GetConnection()
+    defer ReleaseConnection(conn)
+    coll := conn.Collection(model)
+
+    result := coll.FindOne(context.TODO(), filter)
+    return result.Decode(output)
+}
+
 func Delete(model string, id primitive.ObjectID) (err error) {
     // Get a connection
     conn := GetConnection()

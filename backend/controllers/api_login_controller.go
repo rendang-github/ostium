@@ -1,9 +1,12 @@
 package controllers
 
 import (
-    "ostium/models"
     "github.com/labstack/echo/v4"
+    "go.mongodb.org/mongo-driver/bson"
     "net/http"
+    "ostium/db"
+    "ostium/models"
+    "strings"
 )
 
 /// Login request
@@ -15,10 +18,15 @@ type RequestLogin struct {
     Password string `json:"password"`
 }
 
-/// Login response
-type ResponseLogin struct {
-    // Success flag
-    Success bool `json:"success"`
+func APILoginGet(c echo.Context) (err error) {
+    // Check the values
+    user := models.UserFromCookie(c)
+    if user == nil {
+        return c.JSON(http.StatusUnauthorized, nil)
+    }
+
+    // Return a response
+    return c.JSON(http.StatusOK, user)
 }
 
 func APILoginPost(c echo.Context) (err error) {
@@ -27,22 +35,22 @@ func APILoginPost(c echo.Context) (err error) {
         return
     }
 
-    // Check the password
-    //id := models.SetExit(e)
+    // Attempt to load the appropriate user record
+    req.Username = strings.ToLower(req.Username)
+    var user models.User
+    err = db.Query(&user, "user", bson.M{"email": req.Username})
+    if err != nil {
+        return c.NoContent(http.StatusUnauthorized)
+    }
 
-    // Check the values
-    user := models.UserFromLocal(req.Username, req.Password)
-    if user == nil {
-        return c.JSON(http.StatusOK, ResponseLogin {
-            Success: false,
-        })
+    // Check the password
+    if ! user.CheckPassword(req.Password) {
+        return c.NoContent(http.StatusUnauthorized)
     }
 
     // Set the result cookie
     user.Output(c)
 
     // Return a response
-    return c.JSON(http.StatusOK, ResponseLogin {
-        Success: true,
-    })
+    return c.JSON(http.StatusOK, user)
 }
