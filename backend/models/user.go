@@ -14,6 +14,10 @@ import (
 type User struct {
     CValue []byte
     Hash [32]byte
+    Id int `json:"id"`
+    Username string `json:"username"`
+    Password string `json:"password"`
+    PassHash [32]byte `json:"passhash"`
 }
 
 func checksum(in []byte) (ret [32]byte) {
@@ -23,6 +27,16 @@ func checksum(in []byte) (ret [32]byte) {
 
     // Hash secret key and input data
     return blake3.Sum256(append(secret, in...))
+}
+
+func (this *User) CheckOp(c echo.Context, realm int, op int, id *string) (ret bool) {
+    // FIXME implement
+    return true
+}
+
+func (this *User) AddPermission(c echo.Context, realm int, class int, id *string) (ret bool) {
+    // FIXME implement
+    return true
 }
 
 func (this *User) Output(c echo.Context) {
