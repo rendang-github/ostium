@@ -22,7 +22,7 @@ func APILoginGet(c echo.Context) (err error) {
     // Check for login
     user := models.UserFromCookie(c)
     if user == nil {
-        return c.JSON(http.StatusUnauthorized, nil)
+        return c.JSON(http.StatusOK, nil)
     }
 
     // Return a response
