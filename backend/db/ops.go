@@ -60,6 +60,16 @@ func Set(model string, document interface {}, id primitive.ObjectID) (err error)
     return err
 }
 
+func Update(model string, document interface {}, id primitive.ObjectID) (err error) {
+    // Get a connection
+    conn := GetConnection()
+    defer ReleaseConnection(conn)
+    coll := conn.Collection(model)
+
+    _, err = coll.UpdateOne(context.TODO(), bson.M{"_id": id}, document)
+    return err
+}
+
 func All(output interface {}, model string) (err error) {
     // Get a connection
     conn := GetConnection()

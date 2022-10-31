@@ -19,7 +19,7 @@ type RequestLogin struct {
 }
 
 func APILoginGet(c echo.Context) (err error) {
-    // Check the values
+    // Check for login
     user := models.UserFromCookie(c)
     if user == nil {
         return c.JSON(http.StatusUnauthorized, nil)
@@ -27,6 +27,20 @@ func APILoginGet(c echo.Context) (err error) {
 
     // Return a response
     return c.JSON(http.StatusOK, user)
+}
+
+func APILoginDelete(c echo.Context) (err error) {
+    // Check for login
+    user := models.UserFromCookieWithoutSet(c)
+    if user == nil {
+        return c.JSON(http.StatusOK, true)
+    }
+
+    // Clear the cookie
+    user.ClearCookie()
+
+    // Return a response
+    return c.JSON(http.StatusOK, true)
 }
 
 func APILoginPost(c echo.Context) (err error) {
@@ -40,12 +54,12 @@ func APILoginPost(c echo.Context) (err error) {
     var user models.User
     err = db.Query(&user, "user", bson.M{"email": req.Username})
     if err != nil {
-        return c.NoContent(http.StatusUnauthorized)
+        return c.JSON(http.StatusOK, false)
     }
 
     // Check the password
     if ! user.CheckPassword(req.Password) {
-        return c.NoContent(http.StatusUnauthorized)
+        return c.JSON(http.StatusOK, false)
     }
 
     // Set the result cookie

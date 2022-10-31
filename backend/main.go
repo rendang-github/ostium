@@ -27,6 +27,7 @@ func main() {
     // Login routes
     server.POST("/api/v1/login", controllers.APILoginPost)
     server.GET("/api/v1/login", controllers.APILoginGet)
+    server.DELETE("/api/v1/login", controllers.APILoginDelete)
 
     // User routes
     server.POST("/api/v1/user", controllers.APIUserPost)
@@ -45,6 +46,10 @@ func main() {
     server.File("/", "public/index.html")
     server.File("/index.html", "public/index.html")
     server.File("/favicon.png", "public/favicon.png")
+    server.File("/global.css", "public/global.css")
+    server.File("/build/bundle.css", "public/build/bundle.css")
+    server.File("/build/bundle.js", "public/build/bundle.js")
+    server.File("/build/bundle.js.map", "public/build/bundle.js.map")
 
     // Launch web server
     server.Logger.Fatal(server.Start(":8081"))

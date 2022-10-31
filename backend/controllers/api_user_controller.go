@@ -53,7 +53,7 @@ func APIUserPut(c echo.Context) (err error) {
         return c.NoContent(http.StatusBadRequest)
     }
 
-    login := models.UserFromCookie(c)
+    login := models.UserFromCookieWithoutSet(c)
     oidHex := oid.Hex()
     if login == nil || !login.CheckOp(c, auth.RealmUser, auth.OpChange, &oidHex) {
         return c.NoContent(http.StatusUnauthorized)
@@ -89,6 +89,14 @@ func APIUserPut(c echo.Context) (err error) {
     err = db.Set("user", existUser, oid)
     if err != nil {
         return c.NoContent(http.StatusNotFound)
+    }
+
+    // Re-set the cookie as the password may have changed if it's the same user
+    // account that was modified
+    if *login.Id == *existUser.Id {
+        existUser.Output(c)
+    } else {
+        login.Output(c)
     }
 
     return c.JSON(http.StatusOK, existUser)

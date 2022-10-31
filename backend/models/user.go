@@ -6,6 +6,7 @@ import (
     "encoding/base64"
     "github.com/labstack/echo/v4"
     "github.com/zeebo/blake3"
+    "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
     "log"
     "net/http"
@@ -20,6 +21,7 @@ type User struct {
     PassHash [32]byte `json:"-" bson:"passhash"`
     PassSalt [32]byte `json:"-" bson:"passsalt"`
     Password string `json:"password" bson:"-"`
+    CookieSalt [32]byte `json:"-" bson:"cookiesalt"`
     Name string `json:"name" bson:"name"`
     Created time.Time `json:"created" bson:"created"`
     Modified time.Time `json:"modified" bson:"modified"`
@@ -44,6 +46,7 @@ func CreateUser(req *User) (user *User) {
 
     // Generate salt and set password hash
     rand.Read(user.PassSalt[:])
+    rand.Read(user.CookieSalt[:])
     hashme := append(user.PassSalt[:], []byte(req.Password)...)
     user.PassHash = blake3.Sum256(hashme)
 
@@ -66,7 +69,8 @@ func (this *User) Update(req *User) {
     // Generate salt and set password hash
     if len(req.Password) != 0 {
         rand.Read(this.PassSalt[:])
-        hashme := append(this.PassSalt[:], []byte(this.Password)...)
+        rand.Read(this.CookieSalt[:])
+        hashme := append(this.PassSalt[:], []byte(req.Password)...)
         this.PassHash = blake3.Sum256(hashme)
     }
 
@@ -85,9 +89,10 @@ func (this *User) AddPermission(c echo.Context, realm int, class int, id *string
 }
 
 func (this *User) Output(c echo.Context) {
-    oidSlice := this.Id[:]
-    sum := checksum(oidSlice)
-    raw := append(sum[:], oidSlice...)
+    sumSlice := this.CookieSalt[:]
+    sumSlice = append(sumSlice, this.Id[:]...)
+    sum := checksum(sumSlice)
+    raw := append(sum[:], sumSlice...)
 
     // Set the result cookie
     cookie := new(http.Cookie)
@@ -106,7 +111,7 @@ func (this *User) CheckPassword(pass string) bool {
     return this.PassHash == hash
 }
 
-func UserFromCookie(c echo.Context) *User {
+func UserFromCookieWithoutSet(c echo.Context) *User {
     cookie, err := c.Cookie("auth")
     if err != nil {
         log.Printf("Error reading cookie")
@@ -120,19 +125,21 @@ func UserFromCookie(c echo.Context) *User {
         return nil
     }
 
-    if len(hashedRaw) != (32 + 12) {
+    if len(hashedRaw) != (32 + 32 + 12) {
         log.Printf("Got wrong cookie")
         return nil
     }
 
     // Extract the expected hash and oid
     var hash [32]byte
+    var salt [32]byte
     copy(hash[:], hashedRaw[:32])
+    copy(salt[:], hashedRaw[32:64])
 
-    oidSlice := hashedRaw[32:]
+    oidSlice := hashedRaw[64:76]
 
     // Create the hasher to validate the content
-    if checksum(oidSlice) != hash {
+    if checksum(hashedRaw[32:]) != hash {
         log.Printf("Got bad auth sum")
         return nil
     }
@@ -148,7 +155,32 @@ func UserFromCookie(c echo.Context) *User {
         return nil
     }
 
-    // Re-set cookie
-    user.Output(c)
+    // Check to see if the cookie has been resalted
+    if user.CookieSalt != salt {
+        log.Printf("Cookie salt fails to match")
+        return nil
+    }
+
     return &user
+}
+
+func UserFromCookie(c echo.Context) *User {
+    user := UserFromCookieWithoutSet(c)
+
+    // Re-set cookie
+    if user != nil {
+        user.Output(c)
+    }
+    return user
+}
+
+func (this *User) ClearCookie() {
+    // Reset the cookie salt
+    rand.Read(this.CookieSalt[:])
+
+    // Change it in the database
+    err := db.Update("user", bson.D{{"$set", bson.D{{"cookiesalt", this.CookieSalt}}}}, *this.Id)
+    if err != nil {
+        panic(err)
+    }
 }
