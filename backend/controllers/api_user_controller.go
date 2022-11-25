@@ -2,7 +2,6 @@ package controllers
 import (
     "github.com/labstack/echo/v4"
     "go.mongodb.org/mongo-driver/bson"
-    "go.mongodb.org/mongo-driver/bson/primitive"
     "net/http"
     "ostium/auth"
     "ostium/db"
@@ -11,9 +10,9 @@ import (
 )
 
 func APIUserPost(c echo.Context) (err error) {
-    login := models.UserFromCookie(c)
-    if login == nil || !login.CheckOp(c, auth.RealmUser, auth.OpCreate, nil) {
-        return c.NoContent(http.StatusUnauthorized)
+    _, _, err = Check(c, auth.RealmUser, auth.OpCreate)
+    if err != nil {
+        return
     }
 
     // Read the parameters from the POST
@@ -46,17 +45,9 @@ func APIUserPost(c echo.Context) (err error) {
 }
 
 func APIUserPut(c echo.Context) (err error) {
-    // Get the object id
-    id := c.Param("id")
-    oid, err := primitive.ObjectIDFromHex(id)
+    oid, login, err := Check(c, auth.RealmUser, auth.OpChange)
     if err != nil {
-        return c.NoContent(http.StatusBadRequest)
-    }
-
-    login := models.UserFromCookieWithoutSet(c)
-    oidHex := oid.Hex()
-    if login == nil || !login.CheckOp(c, auth.RealmUser, auth.OpChange, &oidHex) {
-        return c.NoContent(http.StatusUnauthorized)
+        return
     }
 
     // Read the parameters from the PUT
@@ -103,18 +94,9 @@ func APIUserPut(c echo.Context) (err error) {
 }
 
 func APIUserGet(c echo.Context) (err error) {
-    // Get the object id
-    id := c.Param("id")
-    oid, err := primitive.ObjectIDFromHex(id)
+    oid, _, err := Check(c, auth.RealmUser, auth.OpRetrieve)
     if err != nil {
-        return c.NoContent(http.StatusBadRequest)
-    }
-
-    // Check auth
-    login := models.UserFromCookie(c)
-    oidHex := oid.Hex()
-    if login == nil || !login.CheckOp(c, auth.RealmUser, auth.OpRetrieve, &oidHex) {
-        return c.NoContent(http.StatusUnauthorized)
+        return
     }
 
     // Read from the DB
@@ -128,11 +110,12 @@ func APIUserGet(c echo.Context) (err error) {
 }
 
 func APIUserAll(c echo.Context) (err error) {
-    // Check auth
-    login := models.UserFromCookie(c)
-    if login == nil || !login.CheckOp(c, auth.RealmUser, auth.OpRetrieve, nil) {
-        return c.NoContent(http.StatusUnauthorized)
+    _, _, err = Check(c, auth.RealmUser, auth.OpRetrieve)
+    if err != nil {
+        return
     }
+
+    // FIXME we need to filter on the things the user has access to
 
     // We want all records
     var users []models.User
@@ -145,17 +128,9 @@ func APIUserAll(c echo.Context) (err error) {
 }
 
 func APIUserDelete(c echo.Context) (err error) {
-    // Get the object id
-    id := c.Param("id")
-    oid, err := primitive.ObjectIDFromHex(id)
+    oid, _, err := Check(c, auth.RealmUser, auth.OpErase)
     if err != nil {
-        return c.NoContent(http.StatusBadRequest)
-    }
-
-    login := models.UserFromCookie(c)
-    oidHex := oid.Hex()
-    if login == nil || !login.CheckOp(c, auth.RealmUser, auth.OpErase, &oidHex) {
-        return c.NoContent(http.StatusUnauthorized)
+        return
     }
 
     // Erase the record

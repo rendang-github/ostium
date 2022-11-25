@@ -1,7 +1,6 @@
 package controllers
 import (
     "github.com/labstack/echo/v4"
-    "go.mongodb.org/mongo-driver/bson/primitive"
     "net/http"
     "ostium/auth"
     "ostium/db"
@@ -10,9 +9,9 @@ import (
 )
 
 func APICampaignPost(c echo.Context) (err error) {
-    login := models.UserFromCookie(c)
-    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpCreate, nil) {
-        return c.NoContent(http.StatusUnauthorized)
+    _, login, err := Check(c, auth.RealmCampaign, auth.OpCreate)
+    if err != nil {
+        return
     }
 
     // Read the parameters from the POST
@@ -40,17 +39,9 @@ func APICampaignPost(c echo.Context) (err error) {
 }
 
 func APICampaignPut(c echo.Context) (err error) {
-    // Get the object id
-    id := c.Param("id")
-    oid, err := primitive.ObjectIDFromHex(id)
+    oid, _, err := Check(c, auth.RealmCampaign, auth.OpChange)
     if err != nil {
-        return c.NoContent(http.StatusBadRequest)
-    }
-
-    login := models.UserFromCookie(c)
-    oidHex := oid.Hex()
-    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpChange, &oidHex) {
-        return c.NoContent(http.StatusUnauthorized)
+        return
     }
 
     // Read the parameters from the PUT
@@ -81,18 +72,9 @@ func APICampaignPut(c echo.Context) (err error) {
 }
 
 func APICampaignGet(c echo.Context) (err error) {
-    // Get the object id
-    id := c.Param("id")
-    oid, err := primitive.ObjectIDFromHex(id)
+    oid, _, err := Check(c, auth.RealmCampaign, auth.OpRetrieve)
     if err != nil {
-        return c.NoContent(http.StatusBadRequest)
-    }
-
-    // Check auth
-    login := models.UserFromCookie(c)
-    oidHex := oid.Hex()
-    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpRetrieve, &oidHex) {
-        return c.NoContent(http.StatusUnauthorized)
+        return
     }
 
     // Read from the DB
@@ -106,11 +88,12 @@ func APICampaignGet(c echo.Context) (err error) {
 }
 
 func APICampaignAll(c echo.Context) (err error) {
-    // Check auth
-    login := models.UserFromCookie(c)
-    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpRetrieve, nil) {
-        return c.NoContent(http.StatusUnauthorized)
+    _, _, err = Check(c, auth.RealmCampaign, auth.OpRetrieve)
+    if err != nil {
+        return
     }
+
+    // FIXME we need to filter on the things the user has access to
 
     // We want all records
     var campaigns []models.Campaign
@@ -123,17 +106,9 @@ func APICampaignAll(c echo.Context) (err error) {
 }
 
 func APICampaignDelete(c echo.Context) (err error) {
-    // Get the object id
-    id := c.Param("id")
-    oid, err := primitive.ObjectIDFromHex(id)
+    oid, _, err := Check(c, auth.RealmCampaign, auth.OpErase)
     if err != nil {
-        return c.NoContent(http.StatusBadRequest)
-    }
-
-    login := models.UserFromCookie(c)
-    oidHex := oid.Hex()
-    if login == nil || !login.CheckOp(c, auth.RealmCampaign, auth.OpErase, &oidHex) {
-        return c.NoContent(http.StatusUnauthorized)
+        return
     }
 
     // Erase the record
