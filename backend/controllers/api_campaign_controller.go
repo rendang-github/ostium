@@ -21,7 +21,8 @@ func APICampaignPost(c echo.Context) (err error) {
         return
     }
 
-    // Set starting timestamps
+    // Set starting timestamps and creator
+    campaign.Creator = *login.Id
     campaign.Created = time.Now()
     campaign.Modified = campaign.Created
 

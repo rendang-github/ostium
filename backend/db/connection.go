@@ -1,24 +1,24 @@
 package db
 
 import (
+    "context"
     "go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
     "os"
-    "log"
-    "context"
+    "ostium/config"
 )
 
 func GetConnection() (conn *mongo.Database) {
     var uri string
     if uri = os.Getenv("MONGODB_URI"); uri == "" {
-        log.Fatal("You must set your 'MONGODB_URI' environmental variable.")
+        uri = config.DatabaseURI
     }
 
     client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
     if err != nil {
         panic(err)
     }
-    return client.Database("ostium")
+    return client.Database(config.DatabaseName)
 }
 
 func ReleaseConnection(db *mongo.Database) {

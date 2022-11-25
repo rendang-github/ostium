@@ -1,14 +1,21 @@
 package main
 
 import (
+    "flag"
     "github.com/labstack/echo/v4"
     "github.com/labstack/echo/v4/middleware"
     "net/http"
+    "ostium/config"
     "ostium/controllers"
     "ostium/db"
 )
 
 func main() {
+    // Set up command line parameters
+    flag.StringVar(&config.DatabaseURI, "dburi", config.DatabaseURI, "URL to MongoDB backend")
+    flag.StringVar(&config.DatabaseName, "dbname", config.DatabaseName, "Database Name")
+    flag.Parse()
+
     // Set up database
     db.Initialize()
 

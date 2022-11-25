@@ -23,6 +23,11 @@ func createCollection(conn *mongo.Database, label string) {
     }
 }
 
+func removeCollection(conn *mongo.Database, label string) {
+    coll := conn.Collection(label)
+    coll.Drop(context.TODO())
+}
+
 func Initialize() {
     // Get a connection
     conn := GetConnection()
@@ -30,5 +35,14 @@ func Initialize() {
 
     createCollection(conn, "campaign")
     createCollection(conn, "user")
+}
+
+func Clear() {
+    // Get a connection
+    conn := GetConnection()
+    defer ReleaseConnection(conn)
+
+    removeCollection(conn, "campaign")
+    removeCollection(conn, "user")
 }
 

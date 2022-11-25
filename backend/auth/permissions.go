@@ -4,6 +4,9 @@ package auth
 const (
     RealmUser = 1
     RealmCampaign = 2
+    RealmLayout = 3
+    RealmSnippet = 4
+    RealmResource = 5
 )
 
 // Permissions operation
@@ -17,4 +20,6 @@ const (
 // Ownership class
 const (
     ClassOwner = 1
+    ClassContributor = 2
+    ClassViewer = 3
 )
