@@ -10,11 +10,26 @@ import (
     "go.mongodb.org/mongo-driver/bson/primitive"
     "log"
     "net/http"
+    "ostium/auth"
     "ostium/db"
     "time"
 )
 
-/// auth.User
+type UserPermission struct {
+    Resource primitive.ObjectID `json:"resource" bson:"resource"`
+    Realm int `json:"realm" bson:"realm"`
+    Op int `json:"op" bson:"op"`
+}
+
+type UserResourceOpPair struct {
+    Resource primitive.ObjectID
+    Op int
+}
+
+type UserResourceOpPairs []UserResourceOpPair
+
+type UserPermissionMap [auth.RealmMAX]UserResourceOpPairs
+
 type User struct {
     Id *primitive.ObjectID `json:"id" bson:"_id,omitempty"`
     Email string `json:"email" bson:"email"`
@@ -25,6 +40,8 @@ type User struct {
     Name string `json:"name" bson:"name"`
     Created time.Time `json:"created" bson:"created"`
     Modified time.Time `json:"modified" bson:"modified"`
+    Permissions []UserPermission `json:"-" bson:"permissions"`
+    perms UserPermissionMap `bson:"-"`
 }
 
 func checksum(in []byte) (ret [32]byte) {
@@ -78,13 +95,49 @@ func (this *User) Update(req *User) {
     this.Modified = time.Now()
 }
 
-func (this *User) CheckOp(c echo.Context, realm int, op int, id *string) (ret bool) {
-    // FIXME implement
-    return true
+func filterOp(src UserResourceOpPairs, id primitive.ObjectID, op int) bool {
+    for _, el := range src {
+        if el.Resource != id {
+            continue
+        }
+        if el.Op == op || el.Op == auth.OpAdmin {
+            return true
+        }
+    }
+    return false
 }
 
-func (this *User) AddPermission(c echo.Context, realm int, class int, id *string) (ret bool) {
-    // FIXME implement
+func (this *User) CheckOp(realm int, op int, id *primitive.ObjectID) (ret bool) {
+    // Check wildcard
+    var zeroId primitive.ObjectID
+
+    // Try by realm first
+    rmap := this.perms[realm]
+    if filterOp(rmap, zeroId, op) {
+        return true
+    }
+    if id != nil && filterOp(rmap, *id, op) {
+        return true
+    }
+
+    // Try by wildcard realm
+    rmap = this.perms[auth.RealmAll]
+    if filterOp(rmap, zeroId, op) {
+        return true
+    }
+    if id != nil && filterOp(rmap, *id, op) {
+        return true
+    }
+
+    // No permission
+    return false
+}
+
+func (this *User) AddPermission(c echo.Context, realm int, class int, id primitive.ObjectID) (ret bool) {
+    this.Permissions = append(this.Permissions, UserPermission{
+        id,
+        realm,
+        class})
     return true
 }
 
@@ -160,6 +213,14 @@ func UserFromCookieWithoutSet(c echo.Context) *User {
         log.Printf("Cookie salt fails to match")
         return nil
     }
+
+    // Distill perms
+    var perms UserPermissionMap
+    for _, p := range user.Permissions {
+        perms[p.Realm] = append(perms[p.Realm], UserResourceOpPair{
+            p.Resource, p.Op })
+    }
+    user.perms = perms
 
     return &user
 }

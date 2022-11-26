@@ -4,11 +4,15 @@ import (
     "crypto/tls"
     "encoding/json"
     "fmt"
+    "go.mongodb.org/mongo-driver/bson/primitive"
+    "io"
     "io/ioutil"
     "log"
     "net/http"
     "net/http/cookiejar"
+    "os"
     "os/exec"
+    "ostium/auth"
     "ostium/config"
     "ostium/db"
     "ostium/models"
@@ -33,13 +37,13 @@ func createClient() (*http.Client) {
 }
 
 
-func transactClient(client *http.Client, method string, url string, requestBody string) []byte {
+func transactClient(client *http.Client, method string, url string, requestBody string) ([]byte, int) {
     req, err := http.NewRequest(method, url, strings.NewReader(requestBody))
     req.Header.Set("Content-Type", "application/json")
     if err != nil {
         fmt.Printf("client: could not create request: %s\n", err)
         var ret []byte
-        return ret;
+        return ret, 0;
     }
     res, err := client.Do(req)
     if err != nil {
@@ -53,7 +57,7 @@ func transactClient(client *http.Client, method string, url string, requestBody 
         fmt.Printf("%s", err)
     }
     fmt.Println(string(responseBody))
-    return responseBody
+    return responseBody, res.StatusCode
 }
 
 var testNumber = 0;
@@ -67,18 +71,27 @@ func test(label string, success bool) {
     }
 }
 
-func testLogin(client *http.Client) {
-    data := transactClient(client, "POST", "http://localhost:8081/api/v1/login", "{\"username\":\"testing@warlordsofbeer.com\",\"password\":\"My Milkshake\"}")
+func logInClient(client *http.Client, username string, password string, idTarget *string) {
+    data, code := transactClient(client, "POST", "http://localhost:8081/api/v1/login", "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}")
+    test("logInClient code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
-    test("login id", result["id"].(string) != "")
-    test("login email", result["email"].(string) == "testing@warlordsofbeer.com")
-    test("login name", result["name"].(string) == "Test Admin")
-    test("login created", result["created"].(string) != "")
-    test("login modified", result["modified"].(string) != "")
+    if (idTarget != nil) {
+        test("login id", result["id"].(string) != "")
+        test("login email", result["email"].(string) == username)
+        test("login created", result["created"].(string) != "")
+        test("login modified", result["modified"].(string) != "")
 
-    testCreatorId = result["id"].(string)
+        *idTarget = result["id"].(string)
+    } else {
+        // We weren't supposed to get a result
+        test("No result", len(result) == 0)
+    }
+}
+
+func copyToStdout(stream *io.ReadCloser) {
+    io.Copy(os.Stdout, *stream)
 }
 
 func main() {
@@ -90,11 +103,23 @@ func main() {
 
     // Start up the web server
     cmd := exec.Command("./ostium", "-dbname", "ostium_test")
-    err := cmd.Start()
+    stdout, err := cmd.StdoutPipe()
+    if err != nil {
+        log.Fatal(err)
+    }
+    stderr, err := cmd.StderrPipe()
+    if err != nil {
+        log.Fatal(err)
+    }
+    err = cmd.Start()
     defer cmd.Process.Kill()
     if err != nil {
         log.Fatal(err)
     }
+
+    // Echo stdout, stderr in another goroutine
+    go copyToStdout(&stdout)
+    go copyToStdout(&stderr)
 
     // Create a seed user
     seedUser := new(models.User)
@@ -102,6 +127,10 @@ func main() {
     seedUser.Name = "Test Admin"
     seedUser.Password = seedUserPass
     saveUser := models.CreateUser(seedUser);
+    saveUser.Permissions = append(saveUser.Permissions, models.UserPermission{
+        primitive.ObjectID{},
+        auth.RealmAll,
+        auth.OpAdmin })
     db.Insert("user", saveUser)
 
     // Give the web server a second to start up
@@ -109,14 +138,22 @@ func main() {
 
     client := createClient()
 
-    // Attempt to log in
-    testLogin(client)
+    // Attempt to log in the main user
+    logInClient(client, "testing@warlordsofbeer.com", "My Milkshake", &testCreatorId)
 
     // Test the user controller
     runUserTests(client)
 
     // Test the user controller
     runCampaignTests(client)
+
+    // Log in the client we created in the user tests
+    altclient := createClient()
+    var checkId string
+    logInClient(altclient, "test2@warlordsofbeer.com", "Test Password", &checkId)
+
+    // Run permissions tests
+    runPermissionTests(client, altclient, checkId)
 
     log.Printf("%d/%d tests succeeded", testNumber - testFails, testNumber)
     //time.Sleep(60 * 60 * 24 * time.Second)

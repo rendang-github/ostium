@@ -9,7 +9,8 @@ var testCampaignId1 = ""
 var testCampaignId2 = ""
 
 func testCampaignAdd1(client *http.Client) {
-    data := transactClient(client, "POST", "http://localhost:8081/api/v1/campaign", "{\"name\":\"Test 1\",\"Description\":\"Madness\"}")
+    data, code := transactClient(client, "POST", "http://localhost:8081/api/v1/campaign", "{\"name\":\"Test 1\",\"Description\":\"Madness\"}")
+    test("testCampaignAdd1 code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
@@ -26,7 +27,8 @@ func testCampaignAdd1(client *http.Client) {
 }
 
 func testCampaignAdd2(client *http.Client) {
-    data := transactClient(client, "POST", "http://localhost:8081/api/v1/campaign", "{\"name\":\"Test 2\",\"Description\":\"WTF\"}")
+    data, code := transactClient(client, "POST", "http://localhost:8081/api/v1/campaign", "{\"name\":\"Test 2\",\"Description\":\"WTF\"}")
+    test("testCampaignAdd2 code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
@@ -43,7 +45,8 @@ func testCampaignAdd2(client *http.Client) {
 }
 
 func testCampaignChange2(client *http.Client) {
-    data := transactClient(client, "PUT", "http://localhost:8081/api/v1/campaign/" + testCampaignId2, "{\"name\":\"Test 2.1\",\"Description\":\"WTFXXX\"}")
+    data, code := transactClient(client, "PUT", "http://localhost:8081/api/v1/campaign/" + testCampaignId2, "{\"name\":\"Test 2.1\",\"Description\":\"WTFXXX\"}")
+    test("testCampaignChange2 code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
@@ -58,7 +61,8 @@ func testCampaignChange2(client *http.Client) {
 }
 
 func testCampaignGet2(client *http.Client) {
-    data := transactClient(client, "GET", "http://localhost:8081/api/v1/campaign/" + testCampaignId2, "")
+    data, code := transactClient(client, "GET", "http://localhost:8081/api/v1/campaign/" + testCampaignId2, "")
+    test("testCampaignGet2 code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
@@ -73,11 +77,13 @@ func testCampaignGet2(client *http.Client) {
 }
 
 func testCampaignDelete2(client *http.Client) {
-    transactClient(client, "DELETE", "http://localhost:8081/api/v1/campaign/" + testCampaignId2, "")
+    _, code := transactClient(client, "DELETE", "http://localhost:8081/api/v1/campaign/" + testCampaignId2, "")
+    test("testCampaignDelete2 code", code == 200)
 }
 
 func testCampaignList1(client *http.Client) {
-    data := transactClient(client, "GET", "http://localhost:8081/api/v1/campaign", "")
+    data, code := transactClient(client, "GET", "http://localhost:8081/api/v1/campaign", "")
+    test("testCampaignList1 code", code == 200)
     var results []map[string]any
     json.Unmarshal(data, &results)
     test("campaign count", len(results) == 1)
@@ -89,7 +95,8 @@ func testCampaignList1(client *http.Client) {
 }
 
 func testCampaignList2(client *http.Client) {
-    data := transactClient(client, "GET", "http://localhost:8081/api/v1/campaign", "")
+    data, code := transactClient(client, "GET", "http://localhost:8081/api/v1/campaign", "")
+    test("testCampaignList2 code", code == 200)
     var results []map[string]any
     json.Unmarshal(data, &results)
     test("campaign count", len(results) == 2)
@@ -134,4 +141,7 @@ func runCampaignTests(client *http.Client) {
 
     // List campaigns
     testCampaignList1(client)
+
+    // Recreate the deleted campaign for later
+    testCampaignAdd2(client)
 }

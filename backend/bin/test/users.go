@@ -8,7 +8,8 @@ import (
 var testOtherId = "";
 
 func testUserList1(client *http.Client) {
-    data := transactClient(client, "GET", "http://localhost:8081/api/v1/user", "")
+    data, code := transactClient(client, "GET", "http://localhost:8081/api/v1/user", "")
+    test("testUserList1 code", code == 200)
     var results []map[string]any
     json.Unmarshal(data, &results)
     test("user count", len(results) == 1)
@@ -20,7 +21,8 @@ func testUserList1(client *http.Client) {
 }
 
 func testUserAdd(client *http.Client) {
-    data := transactClient(client, "POST", "http://localhost:8081/api/v1/user", "{\"email\":\"test2@warlordsofbeer.com\",\"password\":\"Test Password\",\"name\":\"Test User 2\"}")
+    data, code := transactClient(client, "POST", "http://localhost:8081/api/v1/user", "{\"email\":\"test2@warlordsofbeer.com\",\"password\":\"Test Password\",\"name\":\"Test User 2\"}")
+    test("testUserAdd code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
@@ -34,7 +36,8 @@ func testUserAdd(client *http.Client) {
 }
 
 func testUserChange(client *http.Client) {
-    data := transactClient(client, "PUT", "http://localhost:8081/api/v1/user/" + testOtherId, "{\"name\":\"Doctor Rockso\"}")
+    data, code := transactClient(client, "PUT", "http://localhost:8081/api/v1/user/" + testOtherId, "{\"name\":\"Doctor Rockso\"}")
+    test("testUserChange code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
@@ -48,7 +51,8 @@ func testUserChange(client *http.Client) {
 }
 
 func testUserGet(client *http.Client) {
-    data := transactClient(client, "GET", "http://localhost:8081/api/v1/user/" + testOtherId, "")
+    data, code := transactClient(client, "GET", "http://localhost:8081/api/v1/user/" + testOtherId, "")
+    test("testUserGet code", code == 200)
     var result map[string]any
     json.Unmarshal(data, &result)
 
@@ -62,11 +66,13 @@ func testUserGet(client *http.Client) {
 }
 
 func testUserDelete(client *http.Client) {
-    transactClient(client, "DELETE", "http://localhost:8081/api/v1/user/" + testOtherId, "")
+    _, code := transactClient(client, "DELETE", "http://localhost:8081/api/v1/user/" + testOtherId, "")
+    test("testUserDelete code", code == 200)
 }
 
 func testUserList2(client *http.Client) {
-    data := transactClient(client, "GET", "http://localhost:8081/api/v1/user", "")
+    data, code := transactClient(client, "GET", "http://localhost:8081/api/v1/user", "")
+    test("testUserList2 code", code == 200)
     var results []map[string]any
     json.Unmarshal(data, &results)
     test("user count", len(results) == 2)
@@ -95,9 +101,21 @@ func runUserTests(client *http.Client) {
     // Create another user
     testUserAdd(client)
 
+    // Test we can connect as the user
+    altclient := createClient()
+    var checkId string
+    logInClient(altclient, "test2@warlordsofbeer.com", "Test Password", &checkId)
+    test("login alt id", checkId == testOtherId)
+
     // Change the user
     testUserChange(client)
     testUserGet(client)
+
+    // Since we didn't change the password, check that the original password
+    // still works
+    altclient = createClient()
+    logInClient(altclient, "test2@warlordsofbeer.com", "Test Password", &checkId)
+    test("login alt id 2", checkId == testOtherId)
 
     // Get list of users
     testUserList2(client)
@@ -105,4 +123,14 @@ func runUserTests(client *http.Client) {
     // Delete the new user and check that we get the original list
     testUserDelete(client)
     testUserList1(client)
+
+    // Check the alt login no longer works
+    altclient = createClient()
+    logInClient(altclient, "test2@warlordsofbeer.com", "Test Password", nil)
+
+    // Re add it and check it works
+    testUserAdd(client)
+    altclient = createClient()
+    logInClient(altclient, "test2@warlordsofbeer.com", "Test Password", &checkId)
+
 }

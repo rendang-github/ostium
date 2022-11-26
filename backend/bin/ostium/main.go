@@ -43,6 +43,10 @@ func main() {
     server.GET("/api/v1/user/:id", controllers.APIUserGet)
     server.DELETE("/api/v1/user/:id", controllers.APIUserDelete)
 
+    // Permissions routes
+    server.POST("/api/v1/permissions/:id", controllers.APIUserPermissionsPost)
+    server.GET("/api/v1/permissions/:id", controllers.APIUserPermissionsGet)
+
     // Campaign routes
     server.POST("/api/v1/campaign", controllers.APICampaignPost)
     server.PUT("/api/v1/campaign/:id", controllers.APICampaignPut)

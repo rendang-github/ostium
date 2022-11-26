@@ -5,3 +5,4 @@
 /frontend/public/build/
 /frontend/package-lock.json
 /backend/ostium
+/backend/test

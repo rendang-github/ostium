@@ -10,8 +10,8 @@ import (
 )
 
 func APIUserPost(c echo.Context) (err error) {
-    _, _, err = Check(c, auth.RealmUser, auth.OpCreate)
-    if err != nil {
+    _, _, success := Check(c, auth.RealmUser, auth.OpCreate)
+    if !success {
         return
     }
 
@@ -45,8 +45,8 @@ func APIUserPost(c echo.Context) (err error) {
 }
 
 func APIUserPut(c echo.Context) (err error) {
-    oid, login, err := Check(c, auth.RealmUser, auth.OpChange)
-    if err != nil {
+    oid, login, success := Check(c, auth.RealmUser, auth.OpChange)
+    if !success {
         return
     }
 
@@ -94,8 +94,8 @@ func APIUserPut(c echo.Context) (err error) {
 }
 
 func APIUserGet(c echo.Context) (err error) {
-    oid, _, err := Check(c, auth.RealmUser, auth.OpRetrieve)
-    if err != nil {
+    oid, _, success := Check(c, auth.RealmUser, auth.OpRetrieve)
+    if !success {
         return
     }
 
@@ -110,8 +110,8 @@ func APIUserGet(c echo.Context) (err error) {
 }
 
 func APIUserAll(c echo.Context) (err error) {
-    _, _, err = Check(c, auth.RealmUser, auth.OpRetrieve)
-    if err != nil {
+    _, _, success := Check(c, auth.RealmUser, auth.OpRetrieve)
+    if !success {
         return
     }
 
@@ -128,8 +128,8 @@ func APIUserAll(c echo.Context) (err error) {
 }
 
 func APIUserDelete(c echo.Context) (err error) {
-    oid, _, err := Check(c, auth.RealmUser, auth.OpErase)
-    if err != nil {
+    oid, _, success := Check(c, auth.RealmUser, auth.OpErase)
+    if !success {
         return
     }
 

@@ -9,8 +9,8 @@ import (
 )
 
 func APICampaignPost(c echo.Context) (err error) {
-    _, login, err := Check(c, auth.RealmCampaign, auth.OpCreate)
-    if err != nil {
+    _, login, success := Check(c, auth.RealmCampaign, auth.OpCreate)
+    if !success {
         return
     }
 
@@ -30,8 +30,9 @@ func APICampaignPost(c echo.Context) (err error) {
     campaign.Id = &oid
 
     // Allow the current user to own the new campaign id
-    hexId := oid.Hex();
-    if ! login.AddPermission(c, auth.RealmCampaign, auth.ClassOwner, &hexId) {
+    if ! login.AddPermission(c, auth.RealmCampaign, auth.OpRetrieve, oid) ||
+    ! login.AddPermission(c, auth.RealmCampaign, auth.OpChange, oid) ||
+    ! login.AddPermission(c, auth.RealmCampaign, auth.OpErase, oid) {
         return c.NoContent(http.StatusInternalServerError)
     }
 
@@ -39,8 +40,8 @@ func APICampaignPost(c echo.Context) (err error) {
 }
 
 func APICampaignPut(c echo.Context) (err error) {
-    oid, _, err := Check(c, auth.RealmCampaign, auth.OpChange)
-    if err != nil {
+    oid, _, success := Check(c, auth.RealmCampaign, auth.OpChange)
+    if !success {
         return
     }
 
@@ -72,8 +73,8 @@ func APICampaignPut(c echo.Context) (err error) {
 }
 
 func APICampaignGet(c echo.Context) (err error) {
-    oid, _, err := Check(c, auth.RealmCampaign, auth.OpRetrieve)
-    if err != nil {
+    oid, _, success := Check(c, auth.RealmCampaign, auth.OpRetrieve)
+    if !success {
         return
     }
 
@@ -88,8 +89,8 @@ func APICampaignGet(c echo.Context) (err error) {
 }
 
 func APICampaignAll(c echo.Context) (err error) {
-    _, _, err = Check(c, auth.RealmCampaign, auth.OpRetrieve)
-    if err != nil {
+    _, _, success := Check(c, auth.RealmCampaign, auth.OpRetrieve)
+    if !success {
         return
     }
 
@@ -106,8 +107,8 @@ func APICampaignAll(c echo.Context) (err error) {
 }
 
 func APICampaignDelete(c echo.Context) (err error) {
-    oid, _, err := Check(c, auth.RealmCampaign, auth.OpErase)
-    if err != nil {
+    oid, _, success := Check(c, auth.RealmCampaign, auth.OpErase)
+    if !success {
         return
     }
 

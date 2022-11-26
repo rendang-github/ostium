@@ -6,11 +6,12 @@ import (
     "ostium/models"
 )
 
-func Check(c echo.Context, realm int, op int) (oid primitive.ObjectID, login *models.User, err error) {
+func Check(c echo.Context, realm int, op int) (oid primitive.ObjectID, login *models.User, success bool) {
     // Read the user
     login = models.UserFromCookie(c)
     if login == nil {
-        return oid, login, c.NoContent(http.StatusUnauthorized)
+        c.NoContent(http.StatusUnauthorized)
+        return oid, login, false
     }
 
     // Check to see if there's meant to be an ID param
@@ -26,26 +27,28 @@ func Check(c echo.Context, realm int, op int) (oid primitive.ObjectID, login *mo
     // No object ID, just do a unscoped permissions check
     if found == false {
         if !login.CheckOp(realm, op, nil) {
-            err = c.NoContent(http.StatusUnauthorized)
+            c.NoContent(http.StatusUnauthorized)
+            return oid, login, false
         }
-        return oid, login, err
+        return oid, login, true
     }
 
     // Get the object id
     id := c.Param("id")
 
     // Read oid
-    oid, err = primitive.ObjectIDFromHex(id)
+    oid, err := primitive.ObjectIDFromHex(id)
     if err != nil {
-        return oid, login, c.NoContent(http.StatusBadRequest)
+        c.NoContent(http.StatusBadRequest)
+        return oid, login, false
     }
 
     // Check auth
-    oidHex := oid.Hex()
-    if login == nil || !login.CheckOp(realm, op, &oidHex) {
-        return oid, login, c.NoContent(http.StatusUnauthorized)
+    if login == nil || !login.CheckOp(realm, op, &oid) {
+        c.NoContent(http.StatusUnauthorized)
+        return oid, login, false
     }
 
-    return oid, login, nil
+    return oid, login, true
 }
 
