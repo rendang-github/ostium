@@ -1,6 +1,7 @@
 <script>
 import { fly } from 'svelte/transition';
 import { getObjects } from "../js/ApiOstium";
+import { clickOutside } from "../js/ClickEvents";
 import { createEventDispatcher } from 'svelte';
 
 const dispatch = createEventDispatcher();
@@ -51,12 +52,11 @@ const selector = (obj) => {
 }
 
 </script>
-
 <section>
     <button title="{collection}" on:click={toggle}><slot name="label">Default Label</slot></button>
     {#if open == true}
-    <div transition:fly class="content">
-        <button class="menuitem" title="New {collection}" on:click={e => selector(null)}><slot prop={null}></slot></button>
+    <div use:clickOutside on:outclick={() => (open = false)} transition:fly class="content">
+        <button class="menuitem" title="New {collection}" on:click={e => selector(null)}><slot obj={null}></slot></button>
         {#if loading == true}
             <span class="menuitem">Loading {collection}...</span>
         {:else}
